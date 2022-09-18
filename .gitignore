@@ -6,6 +6,9 @@
 .arch/
 .txt
 !*/
+!arch/
+!source/
+!test/
 
 # User-specific files
 *.rsuser
