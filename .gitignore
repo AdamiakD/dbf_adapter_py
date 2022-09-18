@@ -5,10 +5,10 @@
 
 .arch/
 .txt
-!*/
-!arch/
-!source/
-!test/
+.*/
+.arch/
+.source/
+.test/
 
 # User-specific files
 *.rsuser
@@ -404,7 +404,7 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 Footer
-© 2022 GitHub, Inc.
+ï¿½ 2022 GitHub, Inc.
 Footer navigation
 Terms
 Privacy
