@@ -1,2 +1,2 @@
-from dbfadapter.dbfadapter import convert_file
-from dbfadapter.dbfadapter import parse_args
+from dbfadapter import convert_file
+from dbfadapter import parse_args

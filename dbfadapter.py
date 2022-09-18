@@ -34,10 +34,12 @@ class convert:
                         break
             except Exception as error:
                 print(f'Break work! No separtor found. Error: "{error}"')
+                sys.exit(1)
             print(f'Detected csv separator: "{separator}"')
             return separator
 
     def detect_encoding_in_csv(self):
+
         if self.cp_in == '' and self.ext == 'CSV':
             cp = magic.Magic(mime_encoding=True,
                              keep_going=False).from_file(self.sourcefile)
@@ -59,19 +61,19 @@ class convert:
     def write_from_excel(self):
         print(f'Reading data from "{self.filename}"')
         try:
-            excelFile = pd.read_excel(self.sourcefile,
-                                      dtype="str",
-                                      sheet_name=self.sheet)
+            dfxl = pd.read_excel(self.sourcefile,
+                                 dtype="str",
+                                 sheet_name=self.sheet)
         except Exception as error:
             print(f'Break work! Error: {error}')
             sys.exit(1)
-        if 'DataFrame' in str(type(excelFile)):
-            excelFile = {self.sheet: excelFile}
+        if 'DataFrame' in str(type(dfxl)):
+            dfxl = {self.sheet: dfxl}
         sheetCnt = 0
-        for lsheet in excelFile:
+        for lsheet in dfxl:
             self.finalfile = os.path.splitext(
                 self.sourcefile)[0] + '_' + lsheet + '.dbf'
-            df = pd.DataFrame(excelFile[lsheet])
+            df = pd.DataFrame(dfxl[lsheet])
             if len(df) > 0:
                 self.save_dbf(df)
                 sheetCnt += 1
@@ -82,24 +84,16 @@ class convert:
 
         print(
             f'Reading data from "{self.filename}" with encoding {self.cp_in}')
-
         try:
-            df = pd.read_csv(
-                self.sourcefile,
-                dtype="str",
-                engine='python',
-                delimiter=self.sep,
-                # sep=f'"*[{sep}]"*',
-                encoding=self.cp_in,
-                # doublequote=True,
-                quoting=3)
+            df = pd.read_csv(self.sourcefile,
+                             dtype="str",
+                             engine='python',
+                             delimiter=self.sep,
+                             encoding=self.cp_in,
+                             quoting=3)
         except Exception as error:
             print(f'Break work! Error: {error}')
             sys.exit(1)
-
-        # The default quoting option in read_csv generates incorrect reads inside strings.
-        # It is set to QUOTE_NONE (3) so it leaves all quotes. I am now trimming the external quotes....
-        # Below removing quotation marks and spaces:
         for c in range(len(df.columns)):
             df[df.columns[c]] = df[df.columns[c]].str.replace('""', '"~"')
             df[df.columns[c]] = df[df.columns[c]].str.strip('"')
@@ -108,15 +102,12 @@ class convert:
                                                                   '"~', '"')
             df[df.columns[c]] = df[df.columns[c]].str.strip('~')
             df[df.columns[c]] = df[df.columns[c]].str.strip(' ')
-
         self.save_dbf(df)
 
     def save_dbf(self, df):
         if self.cp_out == 'utf8' or self.cp_out == '':
             self.cp_out = self.codepages_list(
-                f'The encoding "{self.cp_out}" is wrong for WRITING dbf. Enter the correct:'
-            )
-
+                f'Wrong encoding for WRITING dbf. Enter the correct:')
         df.fillna('', inplace=True)
         reccount = len(df)
         if len(df) < 1:
@@ -145,9 +136,8 @@ class convert:
             # replace char \x81
             df[df.columns[c]] = df[df.columns[c]].str.replace(
                 chr(129), chr(252))
-
         print(
-            f'Writing {reccount} records into "{self.finalfile}" with encoding {self.cp_out}'
+            f'Writing {reccount} records into "{os.path.basename(self.finalfile)}" with encoding {self.cp_out}'
         )
         try:
             if os.path.isfile(self.finalfile):
@@ -174,9 +164,9 @@ class convert:
                     tq.clear()
                     dbfTable.close()
                     os.remove(self.finalfile)
-                    self.Messages(
-                        f'Break work! Try again with a different encoding of the dbf record\nEncoding {self.cp_out} error: {error}',
-                        option=1)
+                    self.messages(
+                        f'Break work! Try again with a different encoding of the dbf record\nEncoding {self.cp_out} error: {error}'
+                    )
                     return
         sys.stdout.write('\x1b[1A')
         sys.stdout.write('\x1b[2K')
@@ -193,7 +183,7 @@ class convert:
         layout = [
             [
                 psg.Text(message,
-                         size=(30, 3),
+                         size=(30, 4),
                          font=('Consolas', 10),
                          justification='left')
             ],
@@ -201,14 +191,14 @@ class convert:
                 psg.Combo(
                     ['cp1250', 'cp1251', 'cp1252', 'cp850', 'cp852', 'cp866'],
                     key='board',
-                    size=(20, 1))
+                    size=(30, 1))
             ], [psg.Button('  OK  ', font=('Consolas', 10))]
         ]
-        win = psg.Window('Extract2dbf', layout)
+        win = psg.Window('dbf adapter', layout)
         e, v = win.read()
         win.close()
         if v['board'] == '':
-            self.Messages(f'Break work! The encoding was not selected.')
+            self.messages(f'Break work! The encoding was not selected.')
             sys.exit(1)
         return v['board']
 
@@ -231,7 +221,6 @@ def parse_args():
             sheet = a.replace('-sheet=', '')
     if sheet == '':
         sheet = None
-
     return path, cp_in, cp_out, sheet
 
 
@@ -243,71 +232,3 @@ def convert_file(sourcefile, cp_in, cp_out, sheet=None):
         dbfconv.write_from_csv()
     else:
         dbfconv.write_from_excel()
-
-
-###############################
-# ('ascii', "plain ol' ascii"),
-# ('cp437', 'U.S. MS-DOS'),
-# ('cp850', 'International MS-DOS'),
-# ('cp1252', 'Windows ANSI'),
-# ('mac_roman', 'Standard Macintosh'),
-# ('cp865', 'Danish OEM'),
-# ('cp437', 'Dutch OEM'),
-# ('cp850', 'Dutch OEM (secondary)'),
-# ('cp437', 'Finnish OEM'),
-# ('cp437', 'French OEM'),
-# ('cp850', 'French OEM (secondary)'),
-# ('cp437', 'German OEM'),
-# ('cp850', 'German OEM (secondary)'),
-# ('cp437', 'Italian OEM'),
-# ('cp850', 'Italian OEM (secondary)'),
-# ('cp932', 'Japanese Shift-JIS'),
-# ('cp850', 'Spanish OEM (secondary)'),
-# ('cp437', 'Swedish OEM'),
-# ('cp850', 'Swedish OEM (secondary)'),
-# ('cp865', 'Norwegian OEM'),
-# ('cp437', 'Spanish OEM'),
-# ('cp437', 'English OEM (Britain)'),
-# ('cp850', 'English OEM (Britain) (secondary)'),
-# ('cp437', 'English OEM (U.S.)'),
-# ('cp863', 'French OEM (Canada)'),
-# ('cp850', 'French OEM (secondary)'),
-# ('cp852', 'Czech OEM'),
-# ('cp852', 'Hungarian OEM'),
-# ('cp852', 'Polish OEM'),
-# ('cp860', 'Portugese OEM'),
-# ('cp850', 'Potugese OEM (secondary)'),
-# ('cp866', 'Russian OEM'),
-# ('cp850', 'English OEM (U.S.) (secondary)'),
-# ('cp852', 'Romanian OEM'),
-# ('cp936', 'Chinese GBK (PRC)'),
-# ('cp949', 'Korean (ANSI/OEM)'),
-# ('cp950', 'Chinese Big 5 (Taiwan)'),
-# ('cp874', 'Thai (ANSI/OEM)'),
-# ('cp1252', 'ANSI'),
-# ('cp1252', 'Western European ANSI'),
-# ('cp1252', 'Spanish ANSI'),
-# ('cp852', 'Eastern European MS-DOS'),
-# ('cp866', 'Russian MS-DOS'),
-# ('cp865', 'Nordic MS-DOS'),
-# ('cp861', 'Icelandic MS-DOS'),
-# (None, 'Kamenicky (Czech) MS-DOS'),
-# (None, 'Mazovia (Polish) MS-DOS'),
-# ('cp737', 'Greek MS-DOS (437G)'),
-# ('cp857', 'Turkish MS-DOS'),
-# ('cp950', 'Traditional Chinese (Hong Kong SAR, Taiwan) Windows'),
-# ('cp949', 'Korean Windows'),
-# ('cp936', 'Chinese Simplified (PRC, Singapore) Windows'),
-# ('cp932', 'Japanese Windows'),
-# ('cp874', 'Thai Windows'),
-# ('cp1255', 'Hebrew Windows'),
-# ('cp1256', 'Arabic Windows'),
-# ('cp852', 'Slovenian OEM'),
-# ('cp1250', 'Eastern European Windows'),
-# ('cp1251', 'Russian Windows'),
-# ('cp1254', 'Turkish Windows'),
-# ('cp1253', 'Greek Windows'),
-# ('mac_cyrillic', 'Russian Macintosh'),
-# ('mac_latin2', 'Macintosh EE'),
-# ('mac_greek', 'Greek Macintosh'),
-# ('utf8', '8-bit unicode'),
