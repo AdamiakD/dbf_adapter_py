@@ -17,13 +17,13 @@ class convert:
         self.cp_in = cp_in
         self.cp_out = cp_out
         self.sheet = sheet
-        self.sep = self.detect_separator_in_csv(self.ext)
+        self.sep = self.detect_separator_in_csv()
         self.finalfile = os.path.splitext(self.sourcefile)[0] + '.dbf'
         self.filename = os.path.basename(sourcefile)
         self.detect_encoding_in_csv()
 
-    def detect_separator_in_csv(self, ext):
-        if ext == 'CSV':
+    def detect_separator_in_csv(self):
+        if self.ext == 'CSV':
             line = open(self.sourcefile, "rb")
             head = line.readline()
             line.close()
