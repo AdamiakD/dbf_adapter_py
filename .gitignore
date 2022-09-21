@@ -9,6 +9,7 @@
 .arch/
 .source/
 .test/
+.work/
 
 # User-specific files
 *.rsuser
