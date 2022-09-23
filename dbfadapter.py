@@ -132,8 +132,8 @@ class convert:
 
         newDbfSpecs = ""
         fldList = []
-        badchar = constants.badchar
-        chartorepl = constants.chartorepl
+        badchar = constants.badchars
+        chartorepl = constants.charstorepl
         for c in range(len(df.columns)):
             col = df.columns[c]
             for char in badchar:

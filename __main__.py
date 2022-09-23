@@ -36,4 +36,4 @@ if __name__ == "__main__":
                 sourcefile=file, cp_in=args[1], cp_out=args[2], sheet=args[3]
             )
 
-    time.sleep(1)
+    time.sleep(10)
