@@ -15,7 +15,6 @@ class convert:
         self.cp_in = cp_in
         self.cp_out = cp_out
         self.sheet = sheet
-        self.supportedcp = constants.supportedcp
         self.filename = os.path.basename(self.sourcefile)
 
     def exceptions(self, msg):
@@ -40,26 +39,18 @@ class convert:
             cp = magic.Magic(mime_encoding=True, keep_going=False).from_file(
                 self.sourcefile
             )
-            cp = (
-                cp.replace("windows-", "cp")
-                .replace("iso-8859-1", "cp1252")
-                .replace("iso-8859-5", "cp1251")
-                .replace("iso-8859-7", "cp1253")
-                .replace("iso-8859-7", "cp1253")
-                .replace("iso-8859-9", "cp1254")
-                .replace("utf-8", "utf8")
-            )
 
-            if cp not in self.supportedcp:
+            if cp not in constants.supportedcsvcp:
                 cp = self.codepages_list(
-                    f'The encoding "{cp}" is wrong for READING csv. Enter the correct:'
+                    f'The encoding "{cp}" is wrong for READING csv. Enter the correct:',
+                    constants.supportedcsvcp,
                 )
 
             print(f'Detected csv encoding: "{cp}"')
 
             self.cp_in = cp
             if self.cp_out == "":
-                self.cp_out = self.cp_in
+                self.cp_out = self.cp_in.replace("utf-8", "utf8")
 
     def write_from_excel(self):
         print(f'Reading data from "{self.filename}"')
@@ -120,7 +111,11 @@ class convert:
         self.save_dbf(df, os.path.splitext(self.sourcefile)[0] + ".dbf")
 
     def save_dbf(self, df, finalfile):
-        if self.cp_out == "utf8" or self.cp_out == "":
+        if self.cp_out not in constants.supporteddbfcp or self.cp_out == "":
+            self.cp_out = self.codepages_list(
+                f'The encoding "{self.cp_out}" is wrong for WRITING dbf. Enter the correct:',
+                constants.supporteddbfcp,
+            )
             self.cp_out = self.codepages_list(
                 f"Wrong encoding for WRITING dbf. Try cp1252 encoding or enter the correct:"
             )
@@ -216,7 +211,7 @@ class convert:
         window.read()
         window.close()
 
-    def codepages_list(self, txtmessage):
+    def codepages_list(self, txtmessage, supportedcp):
         psg.theme("LightGray2")
         layout = [
             [
@@ -229,7 +224,10 @@ class convert:
             ],
             [
                 psg.Combo(
-                    self.supportedcp, default_value="cp1252", key="board", size=(20, 1)
+                    supportedcp,
+                    default_value="cp1252",
+                    key="board",
+                    size=(20, 1),
                 )
             ],
             [
@@ -281,4 +279,4 @@ def convert_file(sourcefile, cp_in, cp_out, sheet=None):
             dbfconv.write_from_excel()
     except Exception as error:
         print(error)
-        # pass
+        return 1
