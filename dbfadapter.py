@@ -116,9 +116,6 @@ class convert:
                 f'The encoding "{self.cp_out}" is wrong for WRITING dbf. Enter the correct:',
                 constants.supporteddbfcp,
             )
-            self.cp_out = self.codepages_list(
-                f"Wrong encoding for WRITING dbf. Try cp1252 encoding or enter the correct:"
-            )
 
         df.fillna("", inplace=True)
         reccount = len(df)
@@ -279,4 +276,3 @@ def convert_file(sourcefile, cp_in, cp_out, sheet=None):
             dbfconv.write_from_excel()
     except Exception as error:
         print(error)
-        return 1

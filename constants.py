@@ -89,6 +89,7 @@ supportedcsvcp = [
     "iso-2022-jp-ext",
     "iso-2022-kr",
     "latin-1",
+    "iso-8859-1",
     "iso-8859-2",
     "iso-8859-3",
     "iso-8859-4",
