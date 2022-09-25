@@ -276,4 +276,3 @@ def convert_file(sourcefile, cp_in, cp_out, sheet=None):
             dbfconv.write_from_excel()
     except Exception as error:
         print(error)
-        # pass
