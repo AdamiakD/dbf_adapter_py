@@ -1,4 +1,3 @@
-import sys
 import os
 from tkinter import filedialog
 from tkinter import *
@@ -12,14 +11,13 @@ if __name__ == "__main__":
 
     def sources(path):
         sourcefiles = []
-        try:
-            arg1 = path.replace('"', "")
-            if os.path.isdir(arg1):
-                os.chdir(arg1)
-                sourcefiles = os.listdir(arg1)
+        if path != "":
+            if os.path.isdir(path):
+                os.chdir(path)
+                sourcefiles = os.listdir(path)
             else:
-                sourcefiles.append(sys.argv[1])
-        except:
+                sourcefiles.append(path)
+        else:
             tk = Tk()
             tk.withdraw()
             sourcefiles = filedialog.askopenfilenames(
@@ -36,4 +34,4 @@ if __name__ == "__main__":
                 sourcefile=file, cp_in=args[1], cp_out=args[2], sheet=args[3]
             )
 
-    time.sleep(10)
+    time.sleep(1)

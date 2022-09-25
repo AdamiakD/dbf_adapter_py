@@ -10,6 +10,7 @@
 .source/
 .test/
 .work/
+.gitignore/
 
 # User-specific files
 *.rsuser
