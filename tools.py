@@ -24,7 +24,7 @@ def messages(txtmessage):
     window.close()
 
 
-def codepages_list(txtmessage, supportedcp):
+def combos(txtmessage, supportedcp):
     psg.theme("LightGray2")
     layout = [
         [
