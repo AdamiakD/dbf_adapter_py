@@ -37,13 +37,15 @@ class convert:
                     self.sourcefile
                 )
                 if "cannot open" in cp:
-                    print("Can't open file for encoding detection.")
+                    print(
+                        "Can't open file for encoding detection. Probably wrong character in path..."
+                    )
                     cp = ""
             except Exception as error:
                 print(error)
 
             if cp not in constants.supportedcsvcp:
-                cp = tools.codepages_list(
+                cp = tools.combos(
                     f'The encoding "{cp}" is wrong for READING csv. Enter the correct:',
                     constants.supportedcsvcp,
                 )
@@ -114,7 +116,7 @@ class convert:
 
     def save_dbf(self, df, finalfile):
         if self.cp_out not in constants.supporteddbfcp or self.cp_out == "":
-            self.cp_out = tools.codepages_list(
+            self.cp_out = tools.combos(
                 f'The encoding "{self.cp_out}" is wrong for WRITING dbf. Enter the correct:',
                 constants.supporteddbfcp,
             )
