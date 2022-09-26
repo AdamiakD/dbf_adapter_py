@@ -1,3 +1,2 @@
 from dbfadapter import convert_file
-from dbfadapter import parse_args
-import constants
+from tools import detect_sources

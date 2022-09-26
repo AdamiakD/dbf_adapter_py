@@ -3,9 +3,9 @@ import os
 import dbf
 import pandas as pd
 import magic
-import PySimpleGUI as psg
 from tqdm import tqdm
 import constants
+import tools
 
 
 class convert:
@@ -16,10 +16,6 @@ class convert:
         self.cp_out = cp_out
         self.sheet = sheet
         self.filename = os.path.basename(self.sourcefile)
-
-    def exceptions(self, msg):
-        print(f"Execution value: {msg}")
-        return
 
     def detect_separator_in_csv(self):
         try:
@@ -32,16 +28,22 @@ class convert:
                     print(f'Detected csv separator: "{separator}"')
                     return separator
         except Exception as error:
-            self.exceptions(error)
+            print(error)
 
     def detect_encoding_in_csv(self):
         if self.cp_in == "":
-            cp = magic.Magic(mime_encoding=True, keep_going=False).from_file(
-                self.sourcefile
-            )
+            try:
+                cp = magic.Magic(mime_encoding=True, keep_going=False).from_file(
+                    self.sourcefile
+                )
+                if "cannot open" in cp:
+                    print("Can't open file for encoding detection.")
+                    cp = ""
+            except Exception as error:
+                print(error)
 
             if cp not in constants.supportedcsvcp:
-                cp = self.codepages_list(
+                cp = tools.codepages_list(
                     f'The encoding "{cp}" is wrong for READING csv. Enter the correct:',
                     constants.supportedcsvcp,
                 )
@@ -62,7 +64,7 @@ class convert:
                 sheet_name=self.sheet,
             )
         except Exception as error:
-            self.exceptions(error)
+            print(error)
 
         if "DataFrame" in str(type(dfxl)):
             dfxl = {self.sheet: dfxl}
@@ -76,14 +78,14 @@ class convert:
                 )
 
         if sheetCnt > 1:
-            self.messages("The file contains more than one sheet...")
+            tools.messages("The file contains more than one sheet...")
 
     def write_from_csv(self):
         self.detect_encoding_in_csv()
         sep = self.detect_separator_in_csv()
 
         if sep == "":
-            self.exceptions("No separator found!")
+            print("No separator found!")
 
         print(f'Reading data from "{self.filename}" with encoding {self.cp_in}')
 
@@ -98,7 +100,7 @@ class convert:
                 keep_default_na=False,
             )
         except Exception as error:
-            self.exceptions(error)
+            print(error)
 
         for c in range(len(df.columns)):
             df[df.columns[c]] = df[df.columns[c]].str.replace('""', '"~"')
@@ -112,7 +114,7 @@ class convert:
 
     def save_dbf(self, df, finalfile):
         if self.cp_out not in constants.supporteddbfcp or self.cp_out == "":
-            self.cp_out = self.codepages_list(
+            self.cp_out = tools.codepages_list(
                 f'The encoding "{self.cp_out}" is wrong for WRITING dbf. Enter the correct:',
                 constants.supporteddbfcp,
             )
@@ -130,6 +132,8 @@ class convert:
             col = df.columns[c]
             for char in badchar:
                 col = col.replace(char, "").replace("ß", "ss")
+            if col[1] in "01234567890":
+                col = "_" + col
             for s, r in chartorepl.items():
                 col = col.replace(s, r)
 
@@ -171,7 +175,7 @@ class convert:
 
             dbfTable.open(dbf.READ_WRITE)
         except Exception as error:
-            self.exceptions(error)
+            print(error)
 
         with dbfTable:
             tq = tqdm(range(reccount), desc=f"Processing")
@@ -191,89 +195,23 @@ class convert:
         print("Finished")
         return 1
 
-    def messages(self, txtmessage):
-        psg.theme("LightGray2")
-        layout = [
-            [
-                psg.Text(
-                    txtmessage,
-                    auto_size_text=True,
-                    font=("Consolas", 10),
-                    justification="left",
-                )
-            ],
-            [psg.Button("   OK   ", font=("Consolas", 10))],
-        ]
-        window = psg.Window("Dbf adapter", layout, element_justification="center")
-        window.read()
-        window.close()
-
-    def codepages_list(self, txtmessage, supportedcp):
-        psg.theme("LightGray2")
-        layout = [
-            [
-                psg.Text(
-                    txtmessage,
-                    size=(35, 3),
-                    font=("Consolas", 10),
-                    justification="center",
-                )
-            ],
-            [
-                psg.Combo(
-                    supportedcp,
-                    default_value="cp1252",
-                    key="board",
-                    size=(20, 1),
-                )
-            ],
-            [
-                psg.Button("  OK  ", font=("Consolas", 10)),
-                psg.Button("CANCEL", font=("Consolas", 10)),
-            ],
-        ]
-        win = psg.Window("Dbf adapter", layout, element_justification="center")
-        e, v = win.read()
-        win.close()
-        if e == "CANCEL" or e is None:
-            return
-        return v["board"]
-
-
-def parse_args():
-    path = ""
-    try:
-        path = sys.argv[1]
-    except:
-        pass
-    cp_in = ""
-    cp_out = ""
-    sheet = ""
-    for a in sys.argv:
-        if "-cpin=" in a:
-            cp_in = a.replace("-cpin=", "")
-        if "-cpout=" in a:
-            cp_out = a.replace("-cpout=", "")
-        if "-sheet=" in a:
-            sheet = a.replace("-sheet=", "")
-    if sheet == "":
-        sheet = None
-    return path, cp_in, cp_out, sheet
-
 
 def convert_file(sourcefile, cp_in, cp_out, sheet=None):
-    dbfconv = convert(
-        sourcefile,
-        cp_in,
-        cp_out,
-        sheet,
-        os.path.splitext(sourcefile)[1].replace(".", "").upper(),
-    )
-    try:
-        if dbfconv.ext == "CSV":
-            dbfconv.write_from_csv()
-        else:
-            dbfconv.write_from_excel()
-    except Exception as error:
-        print(error)
-        # pass
+    if os.path.splitext(sourcefile)[1].lower() in constants.supportedfiles:
+        dbfconv = convert(
+            sourcefile,
+            cp_in,
+            cp_out,
+            sheet,
+            os.path.splitext(sourcefile)[1].replace(".", "").upper(),
+        )
+        try:
+            if dbfconv.ext == "CSV":
+                dbfconv.write_from_csv()
+            else:
+                dbfconv.write_from_excel()
+        except Exception as error:
+            print(f"Break work. {error}")
+            tools.messages(f"Break work. {error}")
+    else:
+        print("Wrong file type.")
